@@ -5,7 +5,7 @@ const STAFF_PASSWORD = 'darukan2024';
 const FIXED_PRICE = 300;
 const DEADLINE_HOUR = 17;
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyeGT0h__c09sSUyEi9Ttrmg_Un98_xXe4EWAmyh0LAyi5h9n4KGRVIjJC30jyDS9SB';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbztMyX037dOql-HbWy41bCP-KRFh0rlsAirbeRNCSkUTpCWa_4q2JPWc-GgZJKm6vFN/exec';
 
 const DAY_NAMES = ['日','月','火','水','木','金','土'];
 const DAY_CLASSES = ['day-sun','day-mon','day-tue','day-wed','day-thu','day-fri','day-sat'];
