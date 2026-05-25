@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ダレカン給食注文システム</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">
+    🍱 ダレカン給食
+    <span id="mode-label">利用者モード</span>
+  </div>
+  <button class="header-mode-btn" id="mode-toggle-btn" onclick="toggleMode()">⚙ スタッフ</button>
+</div>
+
+<div class="tab-nav" id="user-tabs">
+  <button class="tab-btn active" onclick="switchTab('menu-tab', this)">📋 今週の献立</button>
+  <button class="tab-btn" onclick="switchTab('order-tab', this)">✏️ 注文する</button>
+  <button class="tab-btn" onclick="switchTab('myorder-tab', this)">👤 自分の注文</button>
+</div>
+<div class="tab-nav" id="staff-tabs" style="display:none">
+  <button class="tab-btn staff-tab active" onclick="switchTab('edit-tab', this)">📝 献立変更</button>
+  <button class="tab-btn staff-tab" onclick="switchTab('check-tab', this)">📊 注文確認</button>
+</div>
+
+<div class="main">
+
+  <!-- 利用者：献立タブ -->
+  <div class="panel active" id="menu-tab">
+    <div class="week-nav">
+      <button class="week-btn" onclick="changeWeek(-1)">◀</button>
+      <div class="week-label" id="week-label">読み込み中...</div>
+      <button class="week-btn" onclick="changeWeek(1)">▶</button>
+    </div>
+    <!-- 注文締切バナー -->
+    <div id="deadline-banner"></div>
+    <div class="section-title">📅 今週の献立</div>
+    <div class="menu-grid" id="menu-grid"></div>
+  </div>
+
+  <!-- 利用者：注文タブ -->
+  <div class="panel" id="order-tab">
+    <div class="order-form">
+      <div class="section-title">✏️ 給食注文フォーム</div>
+
+      <div class="form-row">
+        <label class="form-label" for="order-name">お名前</label>
+        <input class="form-input" type="text" id="order-name" placeholder="例：山田 太郎" autocomplete="name">
+      </div>
+
+      <div class="form-row">
+        <label class="form-label">注文パターン</label>
+        <div class="pattern-btns">
+          <button class="pattern-btn active" onclick="selectPattern('single', this)">1日だけ</button>
+          <button class="pattern-btn" onclick="selectPattern('weekdays', this)">月〜金</button>
+          <button class="pattern-btn" onclick="selectPattern('weekdays-sat', this)">月〜土</button>
+          <button class="pattern-btn" onclick="selectPattern('custom', this)">曜日を選ぶ</button>
+        </div>
+        <div id="single-date-wrap" style="margin-top:10px">
+          <select class="form-input form-select" id="single-date"></select>
+        </div>
+        <div id="custom-days-wrap" style="margin-top:10px; display:none">
+          <div class="weekday-checkboxes">
+            <input class="weekday-check" type="checkbox" id="wd-mon" value="1"><label for="wd-mon">月</label>
+            <input class="weekday-check" type="checkbox" id="wd-tue" value="2"><label for="wd-tue">火</label>
+            <input class="weekday-check" type="checkbox" id="wd-wed" value="3"><label for="wd-wed">水</label>
+            <input class="weekday-check" type="checkbox" id="wd-thu" value="4"><label for="wd-thu">木</label>
+            <input class="weekday-check" type="checkbox" id="wd-fri" value="5"><label for="wd-fri">金</label>
+            <input class="weekday-check" type="checkbox" id="wd-sat" value="6"><label for="wd-sat">土</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label">注文</label>
+        <div class="order-status-btns">
+          <input class="status-radio order-yes" type="radio" name="order-status" id="status-yes" value="yes" checked>
+          <label for="status-yes">🍱 注文する</label>
+          <input class="status-radio order-no" type="radio" name="order-status" id="status-no" value="no">
+          <label for="status-no">✖ 注文しない</label>
+        </div>
+      </div>
+
+      <div class="form-row" id="rice-row">
+        <label class="form-label">ご飯の量</label>
+        <div class="rice-btns">
+          <input class="rice-radio" type="radio" name="rice" id="rice-small" value="少なめ">
+          <label for="rice-small">少なめ</label>
+          <input class="rice-radio" type="radio" name="rice" id="rice-normal" value="普通" checked>
+          <label for="rice-normal">普通</label>
+          <input class="rice-radio" type="radio" name="rice" id="rice-large" value="多め">
+          <label for="rice-large">多め</label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label" for="order-note">備考（任意）</label>
+        <input class="form-input" type="text" id="order-note" placeholder="気になることがあれば">
+      </div>
+
+      <button class="submit-btn" onclick="submitOrder()">注文を登録する</button>
+    </div>
+    <div id="order-preview"></div>
+  </div>
+
+  <!-- 利用者：自分の注文確認タブ -->
+  <div class="panel" id="myorder-tab">
+    <div class="week-nav">
+      <button class="week-btn" onclick="changeWeek(-1)">◀</button>
+      <div class="week-label" id="week-label-myorder">読み込み中...</div>
+      <button class="week-btn" onclick="changeWeek(1)">▶</button>
+    </div>
+    <div class="order-form" style="margin-bottom:16px">
+      <div class="section-title">👤 自分の注文を確認する</div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label" for="myorder-name">お名前を入力してください</label>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" type="text" id="myorder-name" placeholder="例：山田 太郎" style="flex:1">
+          <button class="search-btn" onclick="searchMyOrders()">検索</button>
+        </div>
+      </div>
+    </div>
+    <div id="myorder-result"></div>
+  </div>
+
+  <!-- スタッフ：献立変更タブ -->
+  <div class="panel" id="edit-tab">
+    <div class="week-nav">
+      <button class="week-btn" onclick="changeWeek(-1)">◀</button>
+      <div class="week-label" id="week-label-staff">読み込み中...</div>
+      <button class="week-btn" onclick="changeWeek(1)">▶</button>
+    </div>
+    <div class="section-title staff-color">📝 献立変更</div>
+    <!-- 前の週コピーボタン -->
+    <button class="copy-btn" onclick="copyLastWeek()">📋 前の週の献立をコピー</button>
+    <div class="menu-edit-list" id="menu-edit-list"></div>
+    <button class="bulk-save-btn" onclick="saveMenuBulk()">📅 1週間分をまとめて保存</button>
+  </div>
+
+  <!-- スタッフ：注文確認タブ -->
+  <div class="panel" id="check-tab">
+    <div class="week-nav">
+      <button class="week-btn" onclick="changeWeek(-1)">◀</button>
+      <div class="week-label" id="week-label-check">読み込み中...</div>
+      <button class="week-btn" onclick="changeWeek(1)">▶</button>
+    </div>
+    <div class="order-stats">
+      <div class="stat-card">
+        <div class="stat-num" id="stat-total">0</div>
+        <div class="stat-label">週の注文合計</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-people">0</div>
+        <div class="stat-label">注文者数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-days">0</div>
+        <div class="stat-label">注文のある日</div>
+      </div>
+    </div>
+    <div class="section-title staff-color">📊 日別注文一覧</div>
+    <div id="order-check-list"></div>
+    <button class="danger-btn" onclick="confirmReset()">🗑 この週の注文データをリセット</button>
+  </div>
+
+</div>
+
+<!-- パスワードモーダル -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal">
+    <div class="modal-title">🔐 スタッフ認証</div>
+    <div class="modal-body">暗証番号を入力してください</div>
+    <input class="form-input" type="password" id="pw-input" placeholder="暗証番号" style="margin-bottom:16px" onkeydown="if(event.key==='Enter')checkPassword()">
+    <div id="pw-error" style="color:#e05a5a;font-size:13px;margin-bottom:12px;display:none">暗証番号が違います</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closePwModal()">キャンセル</button>
+      <button class="modal-btn confirm" style="background:var(--staff)" onclick="checkPassword()">ログイン</button>
+    </div>
+  </div>
+</div>
+
+<!-- リセット確認モーダル -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">注文データのリセット</div>
+    <div class="modal-body">この週の注文データをすべて削除します。元に戻せません。よろしいですか？</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal()">キャンセル</button>
+      <button class="modal-btn confirm" onclick="resetOrders()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ローディング -->
+<div id="loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.8); z-index:300; align-items:center; justify-content:center; flex-direction:column; gap:12px;">
+  <div style="width:40px; height:40px; border:4px solid #e0d8d0; border-top-color:#e8845a; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+  <div style="font-size:14px; font-weight:600; color:#6b6b6b;" id="loading-msg">読み込み中...</div>
+</div>
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
