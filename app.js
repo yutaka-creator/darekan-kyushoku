@@ -3,7 +3,8 @@
 // =============================================
 const STAFF_PASSWORD = 'darukan2024';
 const FIXED_PRICE = 300;
-const DEADLINE_HOUR = 17;
+const DEADLINE_DAY = 4;   // 締切曜日（0=日,1=月,2=火,3=水,4=木,5=金,6=土）
+const DEADLINE_HOUR = 17; // 締切時刻
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbz1VEPeW23HmDbTacaFSv-rCRH_9_FH-Q6OaInUBHZTDqbwwGLoUPRH__lU4oIxmIwR/exec';
 
@@ -127,8 +128,7 @@ function getOrdersForDate(dateStr) { return orderCache[dateStr] || []; }
 // =============================================
 
 function updateNameSelects() {
-  const selects = ['order-name', 'myorder-name'];
-  selects.forEach(function(id) {
+  ['order-name', 'myorder-name'].forEach(function(id) {
     const sel = document.getElementById(id);
     if (!sel) return;
     const currentVal = sel.value;
@@ -234,49 +234,53 @@ function showLoading(flag, msg) {
 }
 
 // =============================================
-// 締切バナー
+// 締切バナー（木曜締切）
 // =============================================
+
+function getThisWeekDeadline() {
+  // 今週の木曜日DEADLINE_HOUR時を返す
+  const now = new Date();
+  const day = now.getDay();
+  const diff = DEADLINE_DAY - day;
+  const deadline = new Date(now);
+  deadline.setDate(now.getDate() + diff);
+  deadline.setHours(DEADLINE_HOUR, 0, 0, 0);
+  return deadline;
+}
 
 function renderDeadlineBanner() {
   const banner = document.getElementById('deadline-banner');
-  if (!banner || currentWeekOffset !== 0) { if (banner) banner.innerHTML = ''; return; }
+  if (!banner) return;
 
-  const now = new Date();
-  const dates = getWeekDates(0);
-  const lastDeadline = new Date(dates[5]);
-  lastDeadline.setDate(dates[5].getDate() - 1);
-  lastDeadline.setHours(DEADLINE_HOUR, 0, 0, 0);
-
-  if (now > lastDeadline) {
-    banner.innerHTML = '<div class="deadline-banner danger">⛔ 今週の注文受付は終了しました</div>';
+  // 来週の献立を見ているときだけバナーを表示
+  if (currentWeekOffset !== 1) {
+    banner.innerHTML = '';
     return;
   }
 
-  let nextDeadlineDate = null;
-  for (let i = 0; i < dates.length; i++) {
-    const dl = new Date(dates[i]);
-    dl.setDate(dates[i].getDate() - 1);
-    dl.setHours(DEADLINE_HOUR, 0, 0, 0);
-    if (now <= dl) { nextDeadlineDate = { date: dates[i], deadline: dl }; break; }
-  }
-
-  if (!nextDeadlineDate) { banner.innerHTML = ''; return; }
-
-  const diffMs = nextDeadlineDate.deadline - now;
+  const now = new Date();
+  const deadline = getThisWeekDeadline();
+  const diffMs = deadline - now;
   const diffH = Math.floor(diffMs / 3600000);
   const diffD = Math.floor(diffH / 24);
+
   let cls, msg;
 
-  if (diffH < 3) {
+  if (diffMs < 0) {
+    // 締切過ぎ
     cls = 'danger';
-    msg = '⚠️ まもなく締切！' + formatDateLabel(nextDeadlineDate.date) + 'の注文は' + diffH + '時間以内に！';
+    msg = '⛔ 来週分の注文受付は終了しました（木曜' + DEADLINE_HOUR + '時締切）';
+  } else if (diffH < 3) {
+    cls = 'danger';
+    msg = '⚠️ まもなく締切！来週分の注文は' + diffH + '時間以内に！';
   } else if (diffD < 1) {
     cls = 'warning';
-    msg = '🕐 ' + formatDateLabel(nextDeadlineDate.date) + 'の締切は本日' + DEADLINE_HOUR + '時です';
+    msg = '🕐 来週分の注文締切は本日（木曜）' + DEADLINE_HOUR + '時です';
   } else {
     cls = 'safe';
-    msg = '📅 今週の注文受付中（各日とも前日' + DEADLINE_HOUR + '時まで）';
+    msg = '📅 来週分の注文受付中（木曜' + DEADLINE_HOUR + '時締切）';
   }
+
   banner.innerHTML = '<div class="deadline-banner ' + cls + '">' + msg + '</div>';
 }
 
@@ -543,8 +547,6 @@ function renderOrderCheck() {
   let totalOrders = 0;
   const peopleSet = {};
   let daysWithOrders = 0;
-
-  // 曜日別・利用者別カウント
   const weekdayCounts = {};
   const userCounts = {};
 
@@ -554,7 +556,6 @@ function renderOrderCheck() {
     const orders = getOrdersForDate(key);
     const yesOrders = orders.filter(function(o) { return o.status === '注文する'; });
     if (orders.length === 0 && !menu) return '';
-
     if (yesOrders.length > 0) {
       daysWithOrders++;
       totalOrders += yesOrders.length;
@@ -565,7 +566,6 @@ function renderOrderCheck() {
         userCounts[o.name] = (userCounts[o.name] || 0) + 1;
       });
     }
-
     const dayIdx = d.getDay();
     const menuName = menu ? '　<span style="font-size:12px;color:var(--text-light)">' + menu.name + '</span>' : '';
     const rows = orders.length === 0
@@ -578,7 +578,6 @@ function renderOrderCheck() {
             (o.note ? '<div class="order-row-note" title="' + o.note + '">📝' + o.note + '</div>' : '') +
           '</div>';
         }).join('');
-
     return '<div class="order-day-block">' +
       '<div class="order-day-header" onclick="toggleDayBody(this)">' +
         '<div class="order-day-title"><span class="menu-date-day ' + DAY_CLASSES[dayIdx] + '" style="padding:2px 7px;border-radius:5px;font-size:12px;margin-right:6px">' + DAY_NAMES[dayIdx] + '</span>' + formatDateLabel(d) + menuName + '</div>' +
@@ -594,7 +593,6 @@ function renderOrderCheck() {
   document.getElementById('stat-people').textContent = Object.keys(peopleSet).length;
   document.getElementById('stat-days').textContent = daysWithOrders;
 
-  // 曜日別集計レンダリング
   const weekdayOrder = ['月','火','水','木','金','土'];
   document.getElementById('weekday-stats').innerHTML = weekdayOrder.map(function(day, i) {
     const count = weekdayCounts[day] || 0;
@@ -606,11 +604,8 @@ function renderOrderCheck() {
     '</div>';
   }).join('');
 
-  // 利用者別集計レンダリング
   const maxCount = Math.max.apply(null, Object.values(userCounts).concat([1]));
-  const userRows = Object.keys(userCounts).sort(function(a, b) {
-    return userCounts[b] - userCounts[a];
-  });
+  const userRows = Object.keys(userCounts).sort(function(a, b) { return userCounts[b] - userCounts[a]; });
 
   if (userRows.length === 0) {
     document.getElementById('user-stats').innerHTML = '<div style="padding:16px;color:var(--text-light);font-size:13px;text-align:center">注文データがありません</div>';
@@ -666,7 +661,6 @@ function addUser() {
   const name = document.getElementById('new-user-name').value.trim();
   const group = document.getElementById('new-user-group').value.trim();
   if (!name) { showToast('氏名を入力してください', 'error'); return; }
-
   showLoading(true, '追加中...');
   apiPost({ action: 'saveUser', name: name, group: group }).then(function() {
     showLoading(false);
