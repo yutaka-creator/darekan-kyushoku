@@ -17,13 +17,14 @@
 </div>
 
 <div class="tab-nav" id="user-tabs">
-  <button class="tab-btn active" onclick="switchTab('menu-tab', this)">📋 今週の献立</button>
-  <button class="tab-btn" onclick="switchTab('order-tab', this)">✏️ 注文する</button>
-  <button class="tab-btn" onclick="switchTab('myorder-tab', this)">👤 自分の注文</button>
+  <button class="tab-btn active" onclick="switchTab('menu-tab', this)">📋 献立</button>
+  <button class="tab-btn" onclick="switchTab('order-tab', this)">✏️ 注文</button>
+  <button class="tab-btn" onclick="switchTab('myorder-tab', this)">👤 確認</button>
 </div>
 <div class="tab-nav" id="staff-tabs" style="display:none">
-  <button class="tab-btn staff-tab active" onclick="switchTab('edit-tab', this)">📝 献立変更</button>
+  <button class="tab-btn staff-tab active" onclick="switchTab('edit-tab', this)">📝 献立</button>
   <button class="tab-btn staff-tab" onclick="switchTab('check-tab', this)">📊 注文確認</button>
+  <button class="tab-btn staff-tab" onclick="switchTab('user-tab', this)">👥 利用者</button>
 </div>
 
 <div class="main">
@@ -35,7 +36,6 @@
       <div class="week-label" id="week-label">読み込み中...</div>
       <button class="week-btn" onclick="changeWeek(1)">▶</button>
     </div>
-    <!-- 注文締切バナー -->
     <div id="deadline-banner"></div>
     <div class="section-title">📅 今週の献立</div>
     <div class="menu-grid" id="menu-grid"></div>
@@ -47,8 +47,10 @@
       <div class="section-title">✏️ 給食注文フォーム</div>
 
       <div class="form-row">
-        <label class="form-label" for="order-name">お名前</label>
-        <input class="form-input" type="text" id="order-name" placeholder="例：山田 太郎" autocomplete="name">
+        <label class="form-label">お名前</label>
+        <select class="form-input form-select" id="order-name">
+          <option value="">名前を選んでください</option>
+        </select>
       </div>
 
       <div class="form-row">
@@ -116,9 +118,11 @@
     <div class="order-form" style="margin-bottom:16px">
       <div class="section-title">👤 自分の注文を確認する</div>
       <div class="form-row" style="margin-bottom:0">
-        <label class="form-label" for="myorder-name">お名前を入力してください</label>
+        <label class="form-label">お名前を選んでください</label>
         <div style="display:flex;gap:8px">
-          <input class="form-input" type="text" id="myorder-name" placeholder="例：山田 太郎" style="flex:1">
+          <select class="form-input form-select" id="myorder-name" style="flex:1">
+            <option value="">名前を選んでください</option>
+          </select>
           <button class="search-btn" onclick="searchMyOrders()">検索</button>
         </div>
       </div>
@@ -134,7 +138,6 @@
       <button class="week-btn" onclick="changeWeek(1)">▶</button>
     </div>
     <div class="section-title staff-color">📝 献立変更</div>
-    <!-- 前の週コピーボタン -->
     <button class="copy-btn" onclick="copyLastWeek()">📋 前の週の献立をコピー</button>
     <div class="menu-edit-list" id="menu-edit-list"></div>
     <button class="bulk-save-btn" onclick="saveMenuBulk()">📅 1週間分をまとめて保存</button>
@@ -147,6 +150,8 @@
       <div class="week-label" id="week-label-check">読み込み中...</div>
       <button class="week-btn" onclick="changeWeek(1)">▶</button>
     </div>
+
+    <!-- 週間サマリー -->
     <div class="order-stats">
       <div class="stat-card">
         <div class="stat-num" id="stat-total">0</div>
@@ -161,9 +166,41 @@
         <div class="stat-label">注文のある日</div>
       </div>
     </div>
-    <div class="section-title staff-color">📊 日別注文一覧</div>
+
+    <!-- 曜日別合計 -->
+    <div class="section-title staff-color">📈 曜日別注文人数</div>
+    <div class="weekday-stats" id="weekday-stats"></div>
+
+    <!-- 利用者別合計 -->
+    <div class="section-title staff-color" style="margin-top:16px">👤 利用者別注文回数</div>
+    <div class="user-stats" id="user-stats"></div>
+
+    <!-- 日別一覧 -->
+    <div class="section-title staff-color" style="margin-top:16px">📊 日別注文一覧</div>
     <div id="order-check-list"></div>
     <button class="danger-btn" onclick="confirmReset()">🗑 この週の注文データをリセット</button>
+  </div>
+
+  <!-- スタッフ：利用者管理タブ -->
+  <div class="panel" id="user-tab">
+    <div class="section-title staff-color">👥 利用者管理</div>
+
+    <!-- 新規追加フォーム -->
+    <div class="order-form" style="margin-bottom:16px">
+      <div class="form-row">
+        <label class="form-label">氏名</label>
+        <input class="form-input" type="text" id="new-user-name" placeholder="例：山田 太郎">
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">区分</label>
+        <input class="form-input" type="text" id="new-user-group" placeholder="例：就労A型">
+      </div>
+      <button class="save-btn" style="margin-top:12px" onclick="addUser()">＋ 利用者を追加</button>
+    </div>
+
+    <!-- 利用者一覧 -->
+    <div class="section-title staff-color">登録済み利用者</div>
+    <div id="user-list"></div>
   </div>
 
 </div>
@@ -190,6 +227,18 @@
     <div class="modal-actions">
       <button class="modal-btn cancel" onclick="closeModal()">キャンセル</button>
       <button class="modal-btn confirm" onclick="resetOrders()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <div class="modal-title">利用者の削除</div>
+    <div class="modal-body" id="delete-modal-body">この利用者を削除しますか？</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeDeleteModal()">キャンセル</button>
+      <button class="modal-btn confirm" onclick="confirmDeleteUser()">削除する</button>
     </div>
   </div>
 </div>
