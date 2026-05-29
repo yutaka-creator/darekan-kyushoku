@@ -3,8 +3,8 @@
 // =============================================
 const STAFF_PASSWORD = 'darukan2024';
 const FIXED_PRICE = 300;
-const DEADLINE_DAY = 4;   // 締切曜日（0=日,1=月,2=火,3=水,4=木,5=金,6=土）
-const DEADLINE_HOUR = 17; // 締切時刻
+const DEADLINE_DAY = 4;
+const DEADLINE_HOUR = 17;
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyb2nIF5mjxXJJlc6kizwwiJO9fnNys6iRErRh0n29hiGuDtOUgU5uLjMCuZVd7StY9/exec';
 
@@ -114,7 +114,6 @@ function loadOrders() {
 function loadUsers() {
   return apiGet({ action: 'getUsers' }).then(function(data) {
     userCache = data;
-    updateNameSelects();
   }).catch(function() {
     showToast('利用者データの読み込みに失敗しました', 'error');
   });
@@ -124,23 +123,70 @@ function getMenu(dateStr) { return menuCache[dateStr] || null; }
 function getOrdersForDate(dateStr) { return orderCache[dateStr] || []; }
 
 // =============================================
-// 名前プルダウン更新
+// オートコンプリート
 // =============================================
 
-function updateNameSelects() {
-  ['order-name', 'myorder-name'].forEach(function(id) {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    const currentVal = sel.value;
-    sel.innerHTML = '<option value="">名前を選んでください</option>';
-    userCache.forEach(function(u) {
-      const opt = document.createElement('option');
-      opt.value = u.name;
-      opt.textContent = u.name + (u.group ? '（' + u.group + '）' : '');
-      if (u.name === currentVal) opt.selected = true;
-      sel.appendChild(opt);
+function setupAutocomplete(inputId, listId) {
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  if (!input || !list) return;
+
+  input.addEventListener('input', function() {
+    const val = this.value.trim();
+    list.innerHTML = '';
+    list.style.display = 'none';
+    if (!val) return;
+
+    const matches = userCache.filter(function(u) {
+      return u.name.indexOf(val) !== -1;
     });
+
+    if (matches.length === 0) return;
+
+    matches.forEach(function(u) {
+      const item = document.createElement('div');
+      item.className = 'autocomplete-item';
+      item.innerHTML = u.name + (u.group ? '<span class="item-group">（' + u.group + '）</span>' : '');
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        input.value = u.name;
+        list.style.display = 'none';
+        if (inputId === 'myorder-name') searchMyOrders();
+      });
+      list.appendChild(item);
+    });
+    list.style.display = 'block';
   });
+
+  input.addEventListener('focus', function() {
+    // フォーカス時に全候補を表示
+    const val = this.value.trim();
+    if (!val && userCache.length > 0) {
+      list.innerHTML = '';
+      userCache.forEach(function(u) {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.innerHTML = u.name + (u.group ? '<span class="item-group">（' + u.group + '）</span>' : '');
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = u.name;
+          list.style.display = 'none';
+          if (inputId === 'myorder-name') searchMyOrders();
+        });
+        list.appendChild(item);
+      });
+      list.style.display = 'block';
+    }
+  });
+
+  input.addEventListener('blur', function() {
+    setTimeout(function() { list.style.display = 'none'; }, 150);
+  });
+
+  // タッチデバイス対応
+  list.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+  }, { passive: false });
 }
 
 // =============================================
@@ -234,11 +280,10 @@ function showLoading(flag, msg) {
 }
 
 // =============================================
-// 締切バナー（木曜締切）
+// 締切バナー
 // =============================================
 
 function getThisWeekDeadline() {
-  // 今週の木曜日DEADLINE_HOUR時を返す
   const now = new Date();
   const day = now.getDay();
   const diff = DEADLINE_DAY - day;
@@ -251,12 +296,7 @@ function getThisWeekDeadline() {
 function renderDeadlineBanner() {
   const banner = document.getElementById('deadline-banner');
   if (!banner) return;
-
-  // 来週の献立を見ているときだけバナーを表示
-  if (currentWeekOffset !== 1) {
-    banner.innerHTML = '';
-    return;
-  }
+  if (currentWeekOffset !== 1) { banner.innerHTML = ''; return; }
 
   const now = new Date();
   const deadline = getThisWeekDeadline();
@@ -265,9 +305,7 @@ function renderDeadlineBanner() {
   const diffD = Math.floor(diffH / 24);
 
   let cls, msg;
-
   if (diffMs < 0) {
-    // 締切過ぎ
     cls = 'danger';
     msg = '⛔ 来週分の注文受付は終了しました（木曜' + DEADLINE_HOUR + '時締切）';
   } else if (diffH < 3) {
@@ -280,7 +318,6 @@ function renderDeadlineBanner() {
     cls = 'safe';
     msg = '📅 来週分の注文受付中（木曜' + DEADLINE_HOUR + '時締切）';
   }
-
   banner.innerHTML = '<div class="deadline-banner ' + cls + '">' + msg + '</div>';
 }
 
@@ -295,9 +332,11 @@ function renderMenuGrid() {
     const key = dateKey(d);
     const menu = getMenu(key);
     const dayIdx = d.getDay();
+    const dayClass = DAY_CLASSES[dayIdx];
+    const dayName = DAY_NAMES[dayIdx];
     if (!menu) {
       return '<div class="menu-card no-menu"><div class="menu-card-header">' +
-        '<div class="menu-date-badge"><div class="menu-date-day ' + DAY_CLASSES[dayIdx] + '">' + DAY_NAMES[dayIdx] + '</div><div class="menu-date-num">' + d.getDate() + '</div></div>' +
+        '<div class="menu-date-badge"><div class="menu-date-day ' + dayClass + '">' + dayName + '</div><div class="menu-date-num">' + d.getDate() + '</div></div>' +
         '<div class="menu-info"><div class="menu-name" style="color:var(--text-light)">献立未登録</div></div>' +
         '</div></div>';
     }
@@ -305,7 +344,7 @@ function renderMenuGrid() {
     return '<div class="menu-card" onclick="selectDate(\'' + key + '\')">' +
       '<div class="select-indicator">✓ 選択中</div>' +
       '<div class="menu-card-header">' +
-        '<div class="menu-date-badge"><div class="menu-date-day ' + DAY_CLASSES[dayIdx] + '">' + DAY_NAMES[dayIdx] + '</div><div class="menu-date-num">' + d.getDate() + '</div></div>' +
+        '<div class="menu-date-badge"><div class="menu-date-day ' + dayClass + '">' + dayName + '</div><div class="menu-date-num">' + d.getDate() + '</div></div>' +
         '<div class="menu-info"><div class="menu-name">' + menu.name + '</div><div class="menu-sub">' + formatDateLabel(d) + '</div></div>' +
       '</div>' + noteTag + '</div>';
   }).join('');
@@ -382,8 +421,8 @@ function renderOrderPreview() {
 }
 
 function submitOrder() {
-  const name = document.getElementById('order-name').value;
-  if (!name) { showToast('名前を選んでください', 'error'); return; }
+  const name = document.getElementById('order-name').value.trim();
+  if (!name) { showToast('名前を入力してください', 'error'); return; }
   const targetDates = getOrderDates().filter(function(d) { return getMenu(dateKey(d)); });
   if (targetDates.length === 0) { showToast('注文する日を選んでください', 'error'); return; }
   const isOrder = document.getElementById('status-yes').checked;
@@ -410,8 +449,8 @@ function submitOrder() {
 // =============================================
 
 function searchMyOrders() {
-  const name = document.getElementById('myorder-name').value;
-  if (!name) { showToast('名前を選んでください', 'error'); return; }
+  const name = document.getElementById('myorder-name').value.trim();
+  if (!name) { showToast('名前を入力してください', 'error'); return; }
 
   showLoading(true, '注文を検索中...');
   apiGet({ action: 'getOrders', week: weekPrefix(currentWeekOffset) }).then(function(data) {
@@ -771,9 +810,10 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
   document.getElementById('pw-modal').addEventListener('click', function(e) { if (e.target === this) closePwModal(); });
   document.getElementById('delete-modal').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
-  document.getElementById('myorder-name').addEventListener('change', function() {
-    if (this.value) searchMyOrders();
-  });
+
+  // オートコンプリートのセットアップ
+  setupAutocomplete('order-name', 'order-name-list');
+  setupAutocomplete('myorder-name', 'myorder-name-list');
 
   loadUsers().then(function() {
     refreshAll();
