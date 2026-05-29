@@ -48,10 +48,9 @@
 
       <div class="form-row">
         <label class="form-label">お名前</label>
-        <div class="autocomplete-wrap">
-          <input class="form-input" type="text" id="order-name" placeholder="名前を入力してください" autocomplete="off">
-          <div class="autocomplete-list" id="order-name-list"></div>
-        </div>
+        <select class="form-input form-select" id="order-name">
+          <option value="">名前を選んでください</option>
+        </select>
       </div>
 
       <div class="form-row">
@@ -119,12 +118,11 @@
     <div class="order-form" style="margin-bottom:16px">
       <div class="section-title">👤 自分の注文を確認する</div>
       <div class="form-row" style="margin-bottom:0">
-        <label class="form-label">お名前を入力してください</label>
+        <label class="form-label">お名前を選んでください</label>
         <div style="display:flex;gap:8px">
-          <div class="autocomplete-wrap" style="flex:1">
-            <input class="form-input" type="text" id="myorder-name" placeholder="名前を入力してください" autocomplete="off">
-            <div class="autocomplete-list" id="myorder-name-list"></div>
-          </div>
+          <select class="form-input form-select" id="myorder-name" style="flex:1">
+            <option value="">名前を選んでください</option>
+          </select>
           <button class="search-btn" onclick="searchMyOrders()">検索</button>
         </div>
       </div>
@@ -152,6 +150,8 @@
       <div class="week-label" id="week-label-check">読み込み中...</div>
       <button class="week-btn" onclick="changeWeek(1)">▶</button>
     </div>
+
+    <!-- 週間サマリー -->
     <div class="order-stats">
       <div class="stat-card">
         <div class="stat-num" id="stat-total">0</div>
@@ -166,10 +166,16 @@
         <div class="stat-label">注文のある日</div>
       </div>
     </div>
+
+    <!-- 曜日別合計 -->
     <div class="section-title staff-color">📈 曜日別注文人数</div>
     <div class="weekday-stats" id="weekday-stats"></div>
+
+    <!-- 利用者別合計 -->
     <div class="section-title staff-color" style="margin-top:16px">👤 利用者別注文回数</div>
     <div class="user-stats" id="user-stats"></div>
+
+    <!-- 日別一覧 -->
     <div class="section-title staff-color" style="margin-top:16px">📊 日別注文一覧</div>
     <div id="order-check-list"></div>
     <button class="danger-btn" onclick="confirmReset()">🗑 この週の注文データをリセット</button>
@@ -178,6 +184,8 @@
   <!-- スタッフ：利用者管理タブ -->
   <div class="panel" id="user-tab">
     <div class="section-title staff-color">👥 利用者管理</div>
+
+    <!-- 新規追加フォーム -->
     <div class="order-form" style="margin-bottom:16px">
       <div class="form-row">
         <label class="form-label">氏名</label>
@@ -189,6 +197,8 @@
       </div>
       <button class="save-btn" style="margin-top:12px" onclick="addUser()">＋ 利用者を追加</button>
     </div>
+
+    <!-- 利用者一覧 -->
     <div class="section-title staff-color">登録済み利用者</div>
     <div id="user-list"></div>
   </div>
