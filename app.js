@@ -131,55 +131,40 @@ function setupAutocomplete(inputId, listId) {
   const list = document.getElementById(listId);
   if (!input || !list) return;
 
-  input.addEventListener('input', function() {
-    const val = this.value.trim();
+  function buildList(matches) {
     list.innerHTML = '';
-    list.style.display = 'none';
-    if (!val) return;
-    const matches = userCache.filter(function(u) {
-      return u.name.indexOf(val) !== -1;
-    });
-    if (matches.length === 0) return;
+    if (matches.length === 0) { list.style.display = 'none'; return; }
     matches.forEach(function(u) {
       const item = document.createElement('div');
       item.className = 'autocomplete-item';
       item.innerHTML = u.name + (u.group ? '<span class="item-group">（' + u.group + '）</span>' : '');
-      item.addEventListener('mousedown', function(e) {
-        e.preventDefault();
+
+      function selectItem() {
         input.value = u.name;
         list.style.display = 'none';
         if (inputId === 'myorder-name') searchMyOrders();
-      });
+      }
+
+      item.addEventListener('mousedown', function(e) { e.preventDefault(); selectItem(); });
+      item.addEventListener('touchend', function(e) { e.preventDefault(); selectItem(); });
       list.appendChild(item);
     });
     list.style.display = 'block';
+  }
+
+  input.addEventListener('input', function() {
+    const val = this.value.trim();
+    if (!val) { list.style.display = 'none'; return; }
+    buildList(userCache.filter(function(u) { return u.name.indexOf(val) !== -1; }));
   });
 
   input.addEventListener('focus', function() {
-    if (userCache.length === 0) return;
-    list.innerHTML = '';
-    userCache.forEach(function(u) {
-      const item = document.createElement('div');
-      item.className = 'autocomplete-item';
-      item.innerHTML = u.name + (u.group ? '<span class="item-group">（' + u.group + '）</span>' : '');
-      item.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        input.value = u.name;
-        list.style.display = 'none';
-        if (inputId === 'myorder-name') searchMyOrders();
-      });
-      list.appendChild(item);
-    });
-    list.style.display = 'block';
+    buildList(userCache);
   });
 
   input.addEventListener('blur', function() {
-    setTimeout(function() { list.style.display = 'none'; }, 150);
+    setTimeout(function() { list.style.display = 'none'; }, 200);
   });
-
-  list.addEventListener('touchstart', function(e) {
-    e.preventDefault();
-  }, { passive: false });
 }
 
 // =============================================
