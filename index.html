@@ -45,12 +45,12 @@
   <div class="panel" id="order-tab">
     <div class="order-form">
       <div class="section-title">✏️ 給食注文フォーム</div>
-
-      <div class="form-row">
+<div class="form-row">
         <label class="form-label">お名前</label>
-        <select class="form-input form-select" id="order-name">
-          <option value="">名前を選んでください</option>
-        </select>
+        <div class="autocomplete-wrap">
+          <input class="form-input" type="text" id="order-name" placeholder="名前を入力してください" autocomplete="off">
+          <div class="autocomplete-list" id="order-name-list"></div>
+        </div>
       </div>
 
       <div class="form-row">
@@ -120,9 +120,10 @@
       <div class="form-row" style="margin-bottom:0">
         <label class="form-label">お名前を選んでください</label>
         <div style="display:flex;gap:8px">
-          <select class="form-input form-select" id="myorder-name" style="flex:1">
-            <option value="">名前を選んでください</option>
-          </select>
+         <div class="autocomplete-wrap" style="flex:1">
+            <input class="form-input" type="text" id="myorder-name" placeholder="名前を入力してください" autocomplete="off">
+            <div class="autocomplete-list" id="myorder-name-list"></div>
+          </div>
           <button class="search-btn" onclick="searchMyOrders()">検索</button>
         </div>
       </div>

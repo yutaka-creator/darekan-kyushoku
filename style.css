@@ -287,6 +287,46 @@ body {
 .empty-state .icon { font-size: 40px; margin-bottom: 10px; }
 .empty-state p { font-size: 14px; }
 
+
+/* ===== オートコンプリート ===== */
+.autocomplete-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border: 2px solid var(--primary);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  z-index: 50;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
+  box-shadow: var(--shadow-lg);
+}
+
+.autocomplete-item {
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover { background: var(--primary-light); }
+.autocomplete-item .item-group {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-left: 6px;
+}
+
 @media (min-width: 500px) {
   .pattern-btns { grid-template-columns: repeat(4, 1fr); }
   .weekday-stats { grid-template-columns: repeat(6, 1fr); }

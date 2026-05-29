@@ -114,7 +114,6 @@ function loadOrders() {
 function loadUsers() {
   return apiGet({ action: 'getUsers' }).then(function(data) {
     userCache = data;
-    updateNameSelects();
   }).catch(function() {
     showToast('利用者データの読み込みに失敗しました', 'error');
   });
@@ -124,23 +123,63 @@ function getMenu(dateStr) { return menuCache[dateStr] || null; }
 function getOrdersForDate(dateStr) { return orderCache[dateStr] || []; }
 
 // =============================================
-// 名前プルダウン更新
+// オートコンプリート
 // =============================================
 
-function updateNameSelects() {
-  ['order-name', 'myorder-name'].forEach(function(id) {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    const currentVal = sel.value;
-    sel.innerHTML = '<option value="">名前を選んでください</option>';
-    userCache.forEach(function(u) {
-      const opt = document.createElement('option');
-      opt.value = u.name;
-      opt.textContent = u.name + (u.group ? '（' + u.group + '）' : '');
-      if (u.name === currentVal) opt.selected = true;
-      sel.appendChild(opt);
+function setupAutocomplete(inputId, listId) {
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  if (!input || !list) return;
+
+  input.addEventListener('input', function() {
+    const val = this.value.trim();
+    list.innerHTML = '';
+    list.style.display = 'none';
+    if (!val) return;
+    const matches = userCache.filter(function(u) {
+      return u.name.indexOf(val) !== -1;
     });
+    if (matches.length === 0) return;
+    matches.forEach(function(u) {
+      const item = document.createElement('div');
+      item.className = 'autocomplete-item';
+      item.innerHTML = u.name + (u.group ? '<span class="item-group">（' + u.group + '）</span>' : '');
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        input.value = u.name;
+        list.style.display = 'none';
+        if (inputId === 'myorder-name') searchMyOrders();
+      });
+      list.appendChild(item);
+    });
+    list.style.display = 'block';
   });
+
+  input.addEventListener('focus', function() {
+    if (userCache.length === 0) return;
+    list.innerHTML = '';
+    userCache.forEach(function(u) {
+      const item = document.createElement('div');
+      item.className = 'autocomplete-item';
+      item.innerHTML = u.name + (u.group ? '<span class="item-group">（' + u.group + '）</span>' : '');
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        input.value = u.name;
+        list.style.display = 'none';
+        if (inputId === 'myorder-name') searchMyOrders();
+      });
+      list.appendChild(item);
+    });
+    list.style.display = 'block';
+  });
+
+  input.addEventListener('blur', function() {
+    setTimeout(function() { list.style.display = 'none'; }, 150);
+  });
+
+  list.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+  }, { passive: false });
 }
 
 // =============================================
@@ -382,7 +421,7 @@ function renderOrderPreview() {
 }
 
 function submitOrder() {
-  const name = document.getElementById('order-name').value;
+const name = document.getElementById('order-name').value.trim();
   if (!name) { showToast('名前を選んでください', 'error'); return; }
   const targetDates = getOrderDates().filter(function(d) { return getMenu(dateKey(d)); });
   if (targetDates.length === 0) { showToast('注文する日を選んでください', 'error'); return; }
@@ -410,7 +449,7 @@ function submitOrder() {
 // =============================================
 
 function searchMyOrders() {
-  const name = document.getElementById('myorder-name').value;
+  const name = document.getElementById('myorder-name').value.trim();
   if (!name) { showToast('名前を選んでください', 'error'); return; }
 
   showLoading(true, '注文を検索中...');
@@ -771,11 +810,9 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
   document.getElementById('pw-modal').addEventListener('click', function(e) { if (e.target === this) closePwModal(); });
   document.getElementById('delete-modal').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
-  document.getElementById('myorder-name').addEventListener('change', function() {
-    if (this.value) searchMyOrders();
-  });
-
-  loadUsers().then(function() {
+loadUsers().then(function() {
+    setupAutocomplete('order-name', 'order-name-list');
+    setupAutocomplete('myorder-name', 'myorder-name-list');
     refreshAll();
   });
 });
