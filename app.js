@@ -51,6 +51,12 @@ function dateKey(date) {
   return y + '-' + m + '-' + d;
 }
 
+function normalizeName(name) {
+  return String(name)
+    .trim()
+    .replace(/[\s\u3000]+/g, '\u3000'); // 連続する半角/全角スペースを全角スペース1個に統一
+}
+
 function formatDateLabel(date) {
   return (date.getMonth() + 1) + '月' + date.getDate() + '日（' + DAY_NAMES[date.getDay()] + '）';
 }
@@ -406,7 +412,7 @@ function renderOrderPreview() {
 }
 
 function submitOrder() {
-const name = document.getElementById('order-name').value.trim();
+const name = normalizeName(document.getElementById('order-name').value);
   if (!name) { showToast('名前を選んでください', 'error'); return; }
   const targetDates = getOrderDates().filter(function(d) { return getMenu(dateKey(d)); });
   if (targetDates.length === 0) { showToast('注文する日を選んでください', 'error'); return; }
@@ -434,7 +440,7 @@ const name = document.getElementById('order-name').value.trim();
 // =============================================
 
 function searchMyOrders() {
-  const name = document.getElementById('myorder-name').value.trim();
+const name = normalizeName(document.getElementById('myorder-name').value);
   if (!name) { showToast('名前を選んでください', 'error'); return; }
 
   showLoading(true, '注文を検索中...');
@@ -682,7 +688,7 @@ function renderUserList() {
 }
 
 function addUser() {
-  const name = document.getElementById('new-user-name').value.trim();
+const name = normalizeName(document.getElementById('new-user-name').value);
   const group = document.getElementById('new-user-group').value.trim();
   if (!name) { showToast('氏名を入力してください', 'error'); return; }
   showLoading(true, '追加中...');
