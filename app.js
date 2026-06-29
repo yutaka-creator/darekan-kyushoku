@@ -6,7 +6,7 @@ const FIXED_PRICE = 300;
 const DEADLINE_DAY = 4;   // 締切曜日（0=日,1=月,2=火,3=水,4=木,5=金,6=土）
 const DEADLINE_HOUR = 17; // 締切時刻
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwR--J9Pxa17pHBBSqJRuEaCmNmootKrdew3fAhwBgHusbV2HkNVA_udCL3KZL6481W/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbz-QxYrV94UaACXiJKirhxvV7-vXaOCbGZCWkA9C0DkfGKAuCd6ccUlfUcN3lMNsUsk/exec';
 
 const DAY_NAMES = ['日','月','火','水','木','金','土'];
 const DAY_CLASSES = ['day-sun','day-mon','day-tue','day-wed','day-thu','day-fri','day-sat'];
