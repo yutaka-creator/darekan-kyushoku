@@ -51,10 +51,9 @@ function dateKey(date) {
   return y + '-' + m + '-' + d;
 }
 
+// スペース（半角・全角）を完全に除去して比較・保存用のキーにする
 function normalizeName(name) {
-  return String(name)
-    .trim()
-    .replace(/[\s\u3000]+/g, '\u3000'); // 連続する半角/全角スペースを全角スペース1個に統一
+  return String(name).replace(/[\s\u3000]+/g, '');
 }
 
 function formatDateLabel(date) {
@@ -161,7 +160,9 @@ function setupAutocomplete(inputId, listId) {
   input.addEventListener('input', function() {
     const val = this.value.trim();
     if (!val) { list.style.display = 'none'; return; }
-    buildList(userCache.filter(function(u) { return u.name.indexOf(val) !== -1; }));
+    buildList(userCache.filter(function(u) {
+      return normalizeName(u.name).indexOf(normalizeName(val)) !== -1;
+    }));
   });
 
   input.addEventListener('focus', function() {
@@ -268,7 +269,6 @@ function showLoading(flag, msg) {
 // =============================================
 
 function getThisWeekDeadline() {
-  // 今週の木曜日DEADLINE_HOUR時を返す
   const now = new Date();
   const day = now.getDay();
   const diff = DEADLINE_DAY - day;
@@ -282,7 +282,6 @@ function renderDeadlineBanner() {
   const banner = document.getElementById('deadline-banner');
   if (!banner) return;
 
-  // 来週の献立を見ているときだけバナーを表示
   if (currentWeekOffset !== 1) {
     banner.innerHTML = '';
     return;
@@ -297,7 +296,6 @@ function renderDeadlineBanner() {
   let cls, msg;
 
   if (diffMs < 0) {
-    // 締切過ぎ
     cls = 'danger';
     msg = '⛔ 来週分の注文受付は終了しました（木曜' + DEADLINE_HOUR + '時締切）';
   } else if (diffH < 3) {
@@ -412,7 +410,7 @@ function renderOrderPreview() {
 }
 
 function submitOrder() {
-const name = normalizeName(document.getElementById('order-name').value);
+  const name = normalizeName(document.getElementById('order-name').value);
   if (!name) { showToast('名前を選んでください', 'error'); return; }
   const targetDates = getOrderDates().filter(function(d) { return getMenu(dateKey(d)); });
   if (targetDates.length === 0) { showToast('注文する日を選んでください', 'error'); return; }
@@ -440,7 +438,7 @@ const name = normalizeName(document.getElementById('order-name').value);
 // =============================================
 
 function searchMyOrders() {
-const name = normalizeName(document.getElementById('myorder-name').value);
+  const name = normalizeName(document.getElementById('myorder-name').value);
   if (!name) { showToast('名前を選んでください', 'error'); return; }
 
   showLoading(true, '注文を検索中...');
@@ -452,7 +450,7 @@ const name = normalizeName(document.getElementById('myorder-name').value);
     dates.forEach(function(d) {
       const key = dateKey(d);
       const orders = data[key] || [];
-      const myOrder = orders.find(function(o) { return o.name === name; });
+      const myOrder = orders.find(function(o) { return normalizeName(o.name) === name; });
       if (myOrder) found.push({ date: d, order: myOrder });
     });
 
@@ -592,8 +590,9 @@ function renderOrderCheck() {
       const dayName = DAY_NAMES[d.getDay()];
       weekdayCounts[dayName] = (weekdayCounts[dayName] || 0) + yesOrders.length;
       yesOrders.forEach(function(o) {
-        peopleSet[o.name] = true;
-        userCounts[o.name] = (userCounts[o.name] || 0) + 1;
+        const key2 = normalizeName(o.name);
+        peopleSet[key2] = true;
+        userCounts[key2] = (userCounts[key2] || 0) + 1;
       });
     }
     const dayIdx = d.getDay();
@@ -641,15 +640,16 @@ function renderOrderCheck() {
     document.getElementById('user-stats').innerHTML = '<div style="padding:16px;color:var(--text-light);font-size:13px;text-align:center">注文データがありません</div>';
   } else {
     document.getElementById('user-stats').innerHTML = '<div class="user-stats">' +
-      userRows.map(function(name) {
-        const count = userCounts[name];
-        const user = userCache.find(function(u) { return u.name === name; });
+      userRows.map(function(normKey) {
+        const count = userCounts[normKey];
+        const user = userCache.find(function(u) { return normalizeName(u.name) === normKey; });
+        const displayName = user ? user.name : normKey;
         const group = user ? user.group : '';
         const pct = Math.round(count / maxCount * 100);
         return '<div class="user-stat-row">' +
           '<div style="flex:1">' +
             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
-              '<span class="user-stat-name">' + name + '</span>' +
+              '<span class="user-stat-name">' + displayName + '</span>' +
               (group ? '<span class="user-stat-group">' + group + '</span>' : '') +
             '</div>' +
             '<div class="user-stat-bar"><div class="user-stat-bar-fill" style="width:' + pct + '%"></div></div>' +
@@ -688,7 +688,7 @@ function renderUserList() {
 }
 
 function addUser() {
-const name = normalizeName(document.getElementById('new-user-name').value);
+  const name = normalizeName(document.getElementById('new-user-name').value);
   const group = document.getElementById('new-user-group').value.trim();
   if (!name) { showToast('氏名を入力してください', 'error'); return; }
   showLoading(true, '追加中...');
@@ -801,7 +801,8 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
   document.getElementById('pw-modal').addEventListener('click', function(e) { if (e.target === this) closePwModal(); });
   document.getElementById('delete-modal').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
-loadUsers().then(function() {
+
+  loadUsers().then(function() {
     setupAutocomplete('order-name', 'order-name-list');
     setupAutocomplete('myorder-name', 'myorder-name-list');
     refreshAll();
